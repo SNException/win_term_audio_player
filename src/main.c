@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 		}
 		
 		if (strcmp(strrchr(find_file_data.cFileName, '.'), ".wav") == 0) {
-			char *full_name = calloc(32, sizeof(char)); // TODO(nschultz): 'realloc' if needed
+			char *full_name = calloc(strlen(file_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 			if (full_name == NULL) {
 				printf("Memory allocation failed\n");
 				return 5;
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 		}
 		while (FindNextFile(hFind, &find_file_data)) {
 			if (strcmp(strrchr(find_file_data.cFileName, '.'), ".wav") == 0) {
-			 	char *full_name = calloc(32, sizeof(char)); // TODO(nschultz): 'realloc' if needed
+				char *full_name = calloc(strlen(file_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 				if (full_name == NULL) {
 					printf("Memory allocation failed\n");
 					return 5;
