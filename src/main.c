@@ -9,7 +9,7 @@ typedef unsigned int u32;
 
 #define file_scoped static
 
-file_scoped void
+file_scoped int
 play_wav_file(const char *file_name) {
 	// TODO(nschultz): Make the volume adjustable
 	// waveOutSetVolume(0, 0x10100000); // right
@@ -23,15 +23,17 @@ play_wav_file(const char *file_name) {
 		getchar();
 	} else {
 		printf("Failed to play sound file\n");
+		return 6;
 	}
+	return 0;
 }
 
-file_scoped int
+file_scoped void
 play_wav_files(const char *dir_name) {
 	char *name = calloc(strlen(dir_name), sizeof(char));
 	if (name == NULL) {
 		printf("Memory allocation failed\n");
-		return 3;
+		return;
 	}
 	sprintf(name, "%s\\*", dir_name);
 
@@ -41,14 +43,14 @@ play_wav_files(const char *dir_name) {
 	HANDLE hFind = FindFirstFile(name, &find_file_data);
 	if (hFind == INVALID_HANDLE_VALUE) {
 		printf("Failed to read contents of directory.\n");
-		return 4;
+		goto cleanup;
 	}
 	
 	if (strcmp(strrchr(find_file_data.cFileName, '.'), ".wav") == 0) {
 		char *full_name = calloc(strlen(dir_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 		if (full_name == NULL) {
 			printf("Memory allocation failed\n");
-			return 5;
+			goto cleanup;
 		}
 		sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
 		play_wav_file(full_name);
@@ -59,20 +61,20 @@ play_wav_files(const char *dir_name) {
 			char *full_name = calloc(strlen(dir_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 			if (full_name == NULL) {
 				printf("Memory allocation failed\n");
-				return 5;
+				goto cleanup;
 			}
 			sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
 			play_wav_file(full_name);
 			free(full_name);
 		}
 	}
+	cleanup:
 	FindClose(hFind);
 	free(name);
-
-	return 0;
 }
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv) {
 	if (argc <= 1) {
 		printf("Either a file name or a directory name has to be specified.\n");
 		return 1;
@@ -88,7 +90,7 @@ int main(int argc, char **argv) {
 		play_wav_files(file_name);
 	} else {
 		if (waveOutGetNumDevs() >= 1) {
-			play_wav_file(file_name);
+			return play_wav_file(file_name);
 		} else {
 			printf("No waveform-audio devices are present or an error occured.\n");
 		} 
