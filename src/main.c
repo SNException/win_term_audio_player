@@ -9,14 +9,17 @@ typedef unsigned int u32;
 
 #define file_scoped static
 
+// TODO(nschultz): Create parse function which takes
+// in an error code and produces a human readable text.
 typedef enum error_codes {
 	SUCCESS = 0,
 	ERR_CALLOC = 1,
 	ERR_IO = 1
 } ERROR_CODES;
 
-file_scoped int
-play_wav_file(const char *file_name) {
+file_scoped void
+play_wav_file(const char *file_name, u32 *err) {
+	*err = SUCCESS;
 	// TODO(nschultz): Make the volume adjustable
 	// waveOutSetVolume(0, 0x10100000); // right
 	// waveOutSetVolume(0, 0x00001010); // left
@@ -28,10 +31,8 @@ play_wav_file(const char *file_name) {
 		// and hence continue with the 'playlist'.
 		getchar();
 	} else {
-		printf("Failed to play sound file\n");
-		return 6;
+		*err = ERR_IO;
 	}
-	return 0;
 }
 
 file_scoped void
@@ -60,7 +61,7 @@ play_wav_files(const char *dir_name, u32 *err) {
 			goto cleanup;
 		}
 		sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
-		play_wav_file(full_name);
+		play_wav_file(full_name, err);
 		free(full_name);
 	}
 	while (FindNextFile(hFind, &find_file_data)) {
@@ -71,7 +72,7 @@ play_wav_files(const char *dir_name, u32 *err) {
 				goto cleanup;
 			}
 			sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
-			play_wav_file(full_name);
+			play_wav_file(full_name, err);
 			free(full_name);
 		}
 	}
@@ -101,7 +102,11 @@ main(int argc, char **argv) {
 		}
 	} else {
 		if (waveOutGetNumDevs() >= 1) {
-			return play_wav_file(file_name);
+			u32 err;
+			play_wav_file(file_name, &err);
+			if (err != SUCCESS) {
+				printf("An error occured: %u\n", err);
+			}
 		} else {
 			printf("No waveform-audio devices are present or an error occured.\n");
 		} 
