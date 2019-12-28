@@ -9,6 +9,12 @@ typedef unsigned int u32;
 
 #define file_scoped static
 
+typedef enum error_codes {
+	SUCCESS = 0,
+	ERR_CALLOC = 1,
+	ERR_IO = 1
+} ERROR_CODES;
+
 file_scoped int
 play_wav_file(const char *file_name) {
 	// TODO(nschultz): Make the volume adjustable
@@ -29,10 +35,11 @@ play_wav_file(const char *file_name) {
 }
 
 file_scoped void
-play_wav_files(const char *dir_name) {
+play_wav_files(const char *dir_name, u32 *err) {
+	*err = SUCCESS;
 	char *name = calloc(strlen(dir_name), sizeof(char));
 	if (name == NULL) {
-		printf("Memory allocation failed\n");
+		*err = ERR_CALLOC;
 		return;
 	}
 	sprintf(name, "%s\\*", dir_name);
@@ -42,14 +49,14 @@ play_wav_files(const char *dir_name) {
 
 	HANDLE hFind = FindFirstFile(name, &find_file_data);
 	if (hFind == INVALID_HANDLE_VALUE) {
-		printf("Failed to read contents of directory.\n");
+		*err = ERR_IO;
 		goto cleanup;
 	}
 	
 	if (strcmp(strrchr(find_file_data.cFileName, '.'), ".wav") == 0) {
 		char *full_name = calloc(strlen(dir_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 		if (full_name == NULL) {
-			printf("Memory allocation failed\n");
+			*err = ERR_CALLOC;
 			goto cleanup;
 		}
 		sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
@@ -60,7 +67,7 @@ play_wav_files(const char *dir_name) {
 		if (strcmp(strrchr(find_file_data.cFileName, '.'), ".wav") == 0) {
 			char *full_name = calloc(strlen(dir_name) + strlen(find_file_data.cFileName) + 2, sizeof(char));
 			if (full_name == NULL) {
-				printf("Memory allocation failed\n");
+				*err = ERR_CALLOC;
 				goto cleanup;
 			}
 			sprintf(full_name, "%s\\%s", dir_name, find_file_data.cFileName);
@@ -87,7 +94,11 @@ main(int argc, char **argv) {
 	}
 
 	if (GetFileAttributesA(file_name) == FILE_ATTRIBUTE_DIRECTORY) {
-		play_wav_files(file_name);
+		u32 err;
+		play_wav_files(file_name, &err);
+		if (err != SUCCESS) {
+			printf("An error occured: %u\n", err);
+		}
 	} else {
 		if (waveOutGetNumDevs() >= 1) {
 			return play_wav_file(file_name);
